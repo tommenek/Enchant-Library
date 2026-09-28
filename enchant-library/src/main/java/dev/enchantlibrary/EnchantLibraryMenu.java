@@ -137,7 +137,7 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
     }
 
     private static ItemStack filler() {
-        return named(Items.GRAY_STAINED_GLASS_PANE, " ", ChatFormatting.GRAY, List.of());
+           return named(Items.GLASS_PANE, " ", ChatFormatting.GRAY, List.of());
     }
 
     private ItemStack entryStack(String id, int pts) {
