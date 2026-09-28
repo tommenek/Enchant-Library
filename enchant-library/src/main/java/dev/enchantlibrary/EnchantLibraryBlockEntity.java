@@ -14,6 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -26,18 +27,29 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 
 /**
- * Stores "points" per enchantment. A stored book of level L adds 2^(L-1) points
- * (two level-N books = one level N+1, like an anvil). The library's level for an
- * enchantment is the highest L with 2^(L-1) <= points, capped at
- * vanillaMax * LEVEL_CAP_MULTIPLIER. Taking a book out removes the points it is worth,
- * so nothing is created or lost.
+ * Stores "points" per enchantment.
+ *
+ * Tiers: a book of level L is worth TIER_MULTIPLIER^(L-1) points, so TIER_MULTIPLIER books of
+ * level N are worth one book of level N+1. The library's level for an enchantment is the highest
+ * L whose price is covered by the stored points, capped at vanillaMax * LEVEL_CAP_MULTIPLIER.
+ * Taking a book out removes the points it is worth, so books are never created or lost.
+ *
+ * XP: putting an enchantment on an item costs XP_COST_FACTOR * level^2 experience POINTS
+ * (not levels). Upgrading an existing enchantment only costs the difference.
  */
 public class EnchantLibraryBlockEntity extends BlockEntity {
 
-    /** Max points per enchantment (also bounds how many books can drop when the block is broken). */
-    public static final int MAX_POINTS = 4096;
+    // ---- balance settings: tweak these ----
+    /** How many books of one tier make the next tier (2 = anvil-like, 3 = default, 4 = harsh). */
+    public static final int TIER_MULTIPLIER = 3;
     /** Highest level the library reaches = vanilla max level * this. Enchantments with max level 1 stay at 1. */
     public static final int LEVEL_CAP_MULTIPLIER = 2;
+    /** Hard upper limit for any level (keeps the point math inside an int). */
+    public static final int ABSOLUTE_LEVEL_CAP = 15;
+    /** XP points needed to put level L on an item = XP_COST_FACTOR * L * L (1 XP level is roughly 7-20 points). */
+    public static final int XP_COST_FACTOR = 10;
+    /** How many top-level books' worth of points one enchantment can hold. */
+    public static final int STORAGE_TOP_BOOKS = 4;
 
     private static final Codec<Map<String, Integer>> POINTS_CODEC =
             Codec.unboundedMap(Codec.STRING, Codec.INT);
@@ -80,19 +92,59 @@ public class EnchantLibraryBlockEntity extends BlockEntity {
 
     public static int levelCap(Holder<Enchantment> holder) {
         int max = holder.value().getMaxLevel();
-        return max <= 1 ? 1 : Math.min(max * LEVEL_CAP_MULTIPLIER, 30);
+        return max <= 1 ? 1 : Math.min(max * LEVEL_CAP_MULTIPLIER, ABSOLUTE_LEVEL_CAP);
     }
 
+    /** Points a book of this level is worth (and the points the library needs to reach that level). */
     public static int pointsForLevel(int level) {
-        return 1 << Math.min(Math.max(level, 1) - 1, 12);
+        long value = 1;
+        for (int i = 1; i < Math.min(Math.max(level, 1), ABSOLUTE_LEVEL_CAP); i++) {
+            value *= TIER_MULTIPLIER;
+        }
+        return (int) Math.min(value, Integer.MAX_VALUE / (STORAGE_TOP_BOOKS + 1));
+    }
+
+    /** Points a stored book adds; books above the library's level cap count as cap-level books. */
+    public static int pointsForBook(Holder<Enchantment> holder, int level) {
+        return pointsForLevel(Math.min(level, levelCap(holder)));
+    }
+
+    /** Most points one enchantment can hold. */
+    public static int maxPoints(Holder<Enchantment> holder) {
+        long top = (long) pointsForLevel(levelCap(holder)) * STORAGE_TOP_BOOKS;
+        return (int) Math.max(top, 64);
     }
 
     public static int effectiveLevel(Holder<Enchantment> holder, int pts) {
         if (pts <= 0) {
             return 0;
         }
-        int level = 32 - Integer.numberOfLeadingZeros(pts); // floor(log2(pts)) + 1
-        return Math.min(level, levelCap(holder));
+        int cap = levelCap(holder);
+        int level = 1;
+        while (level < cap && pointsForLevel(level + 1) <= pts) {
+            level++;
+        }
+        return level;
+    }
+
+    /** XP points needed to have this level of an enchantment applied. */
+    public static int xpCost(int level) {
+        return XP_COST_FACTOR * level * level;
+    }
+
+    private static int xpPointsAtLevel(int level) {
+        if (level <= 16) {
+            return level * level + 6 * level;
+        } else if (level <= 31) {
+            return (int) (2.5 * level * level - 40.5 * level + 360);
+        }
+        return (int) (4.5 * level * level - 162.5 * level + 2220);
+    }
+
+    /** The player's total experience in points (levels and the progress bar together). */
+    public static int totalXpPoints(Player player) {
+        return xpPointsAtLevel(player.experienceLevel)
+                + Math.round(player.experienceProgress * player.getXpNeededForNextLevel());
     }
 
     private static ItemStack makeBook(Holder<Enchantment> holder, int level) {
@@ -128,8 +180,8 @@ public class EnchantLibraryBlockEntity extends BlockEntity {
             return fail("That book has no enchantments.");
         }
         for (Holder<Enchantment> holder : enchants.keySet()) {
-            int add = pointsForLevel(enchants.getLevel(holder));
-            if (points.getOrDefault(holder.getRegisteredName(), 0) + add > MAX_POINTS) {
+            int add = pointsForBook(holder, enchants.getLevel(holder));
+            if (points.getOrDefault(holder.getRegisteredName(), 0) + add > maxPoints(holder)) {
                 return new Result(false, Component.literal("The library is full for ")
                         .append(Enchantment.getFullname(holder, enchants.getLevel(holder))));
             }
@@ -139,7 +191,7 @@ public class EnchantLibraryBlockEntity extends BlockEntity {
         boolean first = true;
         for (Holder<Enchantment> holder : enchants.keySet()) {
             int level = enchants.getLevel(holder);
-            points.merge(holder.getRegisteredName(), pointsForLevel(level), Integer::sum);
+            points.merge(holder.getRegisteredName(), pointsForBook(holder, level), Integer::sum);
             if (!first) {
                 message.append(Component.literal(", "));
             }
@@ -150,8 +202,11 @@ public class EnchantLibraryBlockEntity extends BlockEntity {
         return new Result(true, message);
     }
 
-    /** Applies the enchantment, at the library's current level, to the given item. */
-    public Result applyTo(Level level, String id, ItemStack stack) {
+    /**
+     * Applies the enchantment, at the library's current level, to the given item and charges the
+     * player XP points (free in creative). Upgrading an enchantment only costs the difference.
+     */
+    public Result applyTo(Level level, String id, ItemStack stack, Player player) {
         int pts = pointsOf(id);
         if (pts <= 0) {
             return fail("That enchantment is no longer stored.");
@@ -168,9 +223,10 @@ public class EnchantLibraryBlockEntity extends BlockEntity {
                     .append(Enchantment.getFullname(holder, lvl)));
         }
         ItemEnchantments current = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
-        if (current.getLevel(holder) >= lvl) {
+        int oldLevel = current.getLevel(holder);
+        if (oldLevel >= lvl) {
             return new Result(false, Component.literal("Already has ")
-                    .append(Enchantment.getFullname(holder, current.getLevel(holder))).append(" or better."));
+                    .append(Enchantment.getFullname(holder, oldLevel)).append(" or better."));
         }
         for (Holder<Enchantment> other : current.keySet()) {
             if (!other.getRegisteredName().equals(id) && !Enchantment.areCompatible(holder, other)) {
@@ -179,10 +235,21 @@ public class EnchantLibraryBlockEntity extends BlockEntity {
             }
         }
 
+        int cost = xpCost(lvl) - xpCost(oldLevel);
+        if (!player.isCreative()) {
+            int have = totalXpPoints(player);
+            if (have < cost) {
+                return fail("Needs " + cost + " XP points (you have " + have + ").");
+            }
+            player.giveExperiencePoints(-cost);
+        }
+
         ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(current);
         mutable.set(holder, lvl);
         stack.set(DataComponents.ENCHANTMENTS, mutable.toImmutable());
-        return new Result(true, Component.literal("Applied ").append(Enchantment.getFullname(holder, lvl)));
+        return new Result(true, Component.literal("Applied ")
+                .append(Enchantment.getFullname(holder, lvl))
+                .append(Component.literal(" (-" + cost + " XP)")));
     }
 
     /** Removes the points for the highest possible book of this enchantment and returns that book. */
@@ -216,10 +283,9 @@ public class EnchantLibraryBlockEntity extends BlockEntity {
                 continue;
             }
             Holder<Enchantment> holder = found.get();
-            int cap = levelCap(holder);
             int remaining = entry.getValue();
             while (remaining > 0) {
-                int lvl = Math.min(32 - Integer.numberOfLeadingZeros(remaining), cap);
+                int lvl = effectiveLevel(holder, remaining);
                 remaining -= pointsForLevel(lvl);
                 Block.popResource(level, pos, makeBook(holder, lvl));
             }

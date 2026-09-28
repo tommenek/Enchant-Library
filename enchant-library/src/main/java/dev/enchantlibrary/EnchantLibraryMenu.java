@@ -137,7 +137,7 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
     }
 
     private static ItemStack filler() {
-           return named(Items.GLASS_PANE, " ", ChatFormatting.GRAY, List.of());
+        return named(Items.GLASS_PANE, " ", ChatFormatting.GRAY, List.of());
     }
 
     private ItemStack entryStack(String id, int pts) {
@@ -158,6 +158,8 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
         List<Component> lore = new ArrayList<>();
         lore.add(line("Stored points: " + pts, ChatFormatting.GRAY));
         lore.add(line("Library level: " + lvl + " / " + cap, ChatFormatting.GRAY));
+        lore.add(line("Enchanting costs " + EnchantLibraryBlockEntity.xpCost(lvl) + " XP points",
+                ChatFormatting.GREEN));
         if (lvl < cap) {
             lore.add(line("Next level at " + EnchantLibraryBlockEntity.pointsForLevel(lvl + 1) + " points",
                     ChatFormatting.DARK_GRAY));
@@ -176,7 +178,9 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
                 line("Put an item in the middle bottom slot,", ChatFormatting.GRAY),
                 line("then left-click an enchantment.", ChatFormatting.GRAY),
                 line(" ", ChatFormatting.GRAY),
-                line("Two level-N books make one level N+1.", ChatFormatting.DARK_GRAY),
+                line(EnchantLibraryBlockEntity.TIER_MULTIPLIER + " level-N books make one level N+1.",
+                        ChatFormatting.DARK_GRAY),
+                line("Enchanting an item costs XP points.", ChatFormatting.DARK_GRAY),
                 line("Taking a book out uses up its points.", ChatFormatting.DARK_GRAY)));
     }
 
@@ -253,7 +257,7 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
                         player.sendOverlayMessage(Component.literal(
                                 "Put an item in the middle bottom slot first."));
                     } else {
-                        player.sendOverlayMessage(library.applyTo(level, id, target).message());
+                        player.sendOverlayMessage(library.applyTo(level, id, target, player).message());
                         container.setChanged();
                     }
                 }
