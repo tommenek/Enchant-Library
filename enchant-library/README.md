@@ -16,19 +16,17 @@ Obsidian x3
 ## Use
 Right-click the block to open the library screen.
 - Click with an enchanted book on the list (or shift-click a book in your inventory): store it
-- Put an item in the middle bottom slot, then left-click an enchantment: apply it at the library's level
+- Put an item in the middle bottom slot, pick the level with the experience-bottle button
+  (left-click +1, right-click -1, shift-click = highest available), then left-click an enchantment
 - Right-click or shift-click an enchantment: take out a book of that enchantment
 
-## Leveling
-A stored book of level L is worth 2^(L-1) points (two level-N books = level N+1).
-Library level = highest L with 2^(L-1) <= points, capped at 2x the vanilla max
-(Sharpness up to X; single-level enchants like Mending stay at I).
-Taking a book out spends its points. Breaking the block drops everything as books.
+## Balance
+- Tiers: a level-L book is worth 3^(L-1) points, so 3 books of one level make the next level
+  (81 level-I books for level V). The library level is capped at 2x the vanilla max (Sharpness X, Mending I).
+- XP: putting level L on an item costs 10 x L x L experience points (I = 10, II = 40, III = 90, IV = 160, V = 250).
+  Upgrading an enchantment on an item only costs the difference. Creative players pay nothing.
+- Enchanting an item also spends the points of that enchantment level from the library
+  (same as the book of that level; upgrades only spend the difference).
+- Taking a book out spends its points. Breaking the block drops everything as books.
 
-Tweak in EnchantLibraryBlockEntity: LEVEL_CAP_MULTIPLIER, MAX_POINTS.
-
-## Build the jar without installing anything (GitHub Actions)
-1. Create a new GitHub repository and upload the contents of this folder (including the hidden `.github` folder).
-2. Open the Actions tab -> "Build jar" -> wait for the green check.
-3. Download the `enchant-library-jar` artifact, unzip it, and put `enchant-library-1.0.0.jar`
-   (NOT the `-sources` jar) in your Minecraft `mods` folder together with Fabric API.
+Tweak in EnchantLibraryBlockEntity: TIER_MULTIPLIER, LEVEL_CAP_MULTIPLIER, XP_COST_FACTOR, STORAGE_TOP_BOOKS.

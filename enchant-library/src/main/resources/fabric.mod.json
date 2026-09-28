@@ -6,6 +6,7 @@
   "description": "A library block that stores enchanted books, levels them up, and enchants your items.",
   "authors": [],
   "license": "MIT",
+  "icon": "assets/enchantlibrary/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": ["dev.enchantlibrary.EnchantLibraryMod"]

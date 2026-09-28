@@ -32,6 +32,7 @@ import net.minecraft.world.level.Level;
  * Layout (top 6 rows):
  *  - slots 0-44   one enchanted book per stored enchantment (shown at the library's level)
  *  - slot 45      help
+ *  - slot 47      level selector (which level to apply)
  *  - slot 48/50   previous / next page
  *  - slot 49      the item to enchant (a real slot: put an item in, take it out again)
  *
@@ -46,6 +47,7 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
     private static final int MENU_SLOTS = ROWS * 9;     // 54
     private static final int PAGE_SIZE = 45;
     private static final int INFO_SLOT = 45;
+    private static final int LEVEL_SLOT = 47;
     private static final int PREV_SLOT = 48;
     private static final int TARGET_SLOT = 49;
     private static final int NEXT_SLOT = 50;
@@ -56,6 +58,8 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
     private final Level level;
     private final SimpleContainer container = new SimpleContainer(MENU_SLOTS);
     private int page = 0;
+    /** Level the player wants to apply; 0 = the highest level the library has. */
+    private int chosenLevel = 0;
 
     public EnchantLibraryMenu(int containerId, Inventory playerInventory,
                               EnchantLibraryBlockEntity library, Level level) {
@@ -158,13 +162,22 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
         List<Component> lore = new ArrayList<>();
         lore.add(line("Stored points: " + pts, ChatFormatting.GRAY));
         lore.add(line("Library level: " + lvl + " / " + cap, ChatFormatting.GRAY));
-        lore.add(line("Enchanting costs " + EnchantLibraryBlockEntity.xpCost(lvl) + " XP points",
-                ChatFormatting.GREEN));
         if (lvl < cap) {
             lore.add(line("Next level at " + EnchantLibraryBlockEntity.pointsForLevel(lvl + 1) + " points",
                     ChatFormatting.DARK_GRAY));
         }
         lore.add(line(" ", ChatFormatting.GRAY));
+        int applyLevel = chosenLevel <= 0 ? lvl : Math.min(chosenLevel, lvl);
+        ItemStack target = container.getItem(TARGET_SLOT);
+        int oldLevel = target.isEmpty() ? 0
+                : target.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY).getLevel(holder);
+        if (applyLevel > oldLevel) {
+            int xp = EnchantLibraryBlockEntity.xpCost(applyLevel) - EnchantLibraryBlockEntity.xpCost(oldLevel);
+            int used = EnchantLibraryBlockEntity.enchantPoints(applyLevel)
+                    - EnchantLibraryBlockEntity.enchantPoints(oldLevel);
+            lore.add(line("Applying level " + applyLevel + " costs:", ChatFormatting.GREEN));
+            lore.add(line("  " + xp + " XP points and " + used + " library points", ChatFormatting.GREEN));
+        }
         lore.add(line("Left-click: enchant the item in the middle slot", ChatFormatting.YELLOW));
         lore.add(line("Right-click: take out a book", ChatFormatting.YELLOW));
         book.set(DataComponents.LORE, new ItemLore(lore));
@@ -176,12 +189,24 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
                 line("Click with an enchanted book to store it", ChatFormatting.GRAY),
                 line("(or shift-click one in your inventory).", ChatFormatting.GRAY),
                 line("Put an item in the middle bottom slot,", ChatFormatting.GRAY),
-                line("then left-click an enchantment.", ChatFormatting.GRAY),
+                line("pick a level, then left-click an enchantment.", ChatFormatting.GRAY),
                 line(" ", ChatFormatting.GRAY),
                 line(EnchantLibraryBlockEntity.TIER_MULTIPLIER + " level-N books make one level N+1.",
                         ChatFormatting.DARK_GRAY),
-                line("Enchanting an item costs XP points.", ChatFormatting.DARK_GRAY),
+                line("Enchanting costs XP points and uses up", ChatFormatting.DARK_GRAY),
+                line("the enchantment's points in the library.", ChatFormatting.DARK_GRAY),
                 line("Taking a book out uses up its points.", ChatFormatting.DARK_GRAY)));
+    }
+
+    private ItemStack levelStack() {
+        String name = chosenLevel <= 0 ? "Level to apply: highest available" : "Level to apply: " + chosenLevel;
+        return named(Items.EXPERIENCE_BOTTLE, name, ChatFormatting.AQUA, List.of(
+                line("Left-click: +1 level", ChatFormatting.YELLOW),
+                line("Right-click: -1 level", ChatFormatting.YELLOW),
+                line("Shift-click: highest available", ChatFormatting.YELLOW),
+                line(" ", ChatFormatting.GRAY),
+                line("If the library has less, it applies", ChatFormatting.DARK_GRAY),
+                line("the highest level it has.", ChatFormatting.DARK_GRAY)));
     }
 
     private void refresh() {
@@ -197,7 +222,7 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
         }
         container.setItem(INFO_SLOT, infoStack());
         container.setItem(46, filler());
-        container.setItem(47, filler());
+        container.setItem(LEVEL_SLOT, levelStack());
         container.setItem(51, filler());
         container.setItem(52, filler());
         container.setItem(53, filler());
@@ -221,6 +246,7 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
             return;
         }
         super.clicked(slotId, button, input, player);
+        refresh(); // the target item may have changed, so the tooltips need new costs
     }
 
     private void handleMenuClick(int slotId, int button, ContainerInput input, ServerPlayer player) {
@@ -239,6 +265,15 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
             page--;
         } else if (slotId == NEXT_SLOT && input == ContainerInput.PICKUP) {
             page++;
+        } else if (slotId == LEVEL_SLOT
+                && (input == ContainerInput.PICKUP || input == ContainerInput.QUICK_MOVE)) {
+            if (input == ContainerInput.QUICK_MOVE) {
+                chosenLevel = 0;
+            } else if (button == 1) {
+                chosenLevel = Math.max(0, chosenLevel - 1);
+            } else {
+                chosenLevel = Math.min(EnchantLibraryBlockEntity.ABSOLUTE_LEVEL_CAP, chosenLevel + 1);
+            }
         } else if (slotId < PAGE_SIZE
                 && (input == ContainerInput.PICKUP || input == ContainerInput.QUICK_MOVE)) {
             List<Map.Entry<String, Integer>> entries = library.entries();
@@ -257,7 +292,7 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
                         player.sendOverlayMessage(Component.literal(
                                 "Put an item in the middle bottom slot first."));
                     } else {
-                        player.sendOverlayMessage(library.applyTo(level, id, target, player).message());
+                        player.sendOverlayMessage(library.applyTo(level, id, target, player, chosenLevel).message());
                         container.setChanged();
                     }
                 }

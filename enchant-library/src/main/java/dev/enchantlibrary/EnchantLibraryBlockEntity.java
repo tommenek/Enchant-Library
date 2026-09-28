@@ -35,7 +35,8 @@ import net.minecraft.world.level.storage.ValueOutput;
  * Taking a book out removes the points it is worth, so books are never created or lost.
  *
  * XP: putting an enchantment on an item costs XP_COST_FACTOR * level^2 experience POINTS
- * (not levels). Upgrading an existing enchantment only costs the difference.
+ * (not levels). The library also loses the points that enchantment is worth (the same as the book
+ * of that level). Upgrading an existing enchantment on the item only costs the difference.
  */
 public class EnchantLibraryBlockEntity extends BlockEntity {
 
@@ -102,6 +103,11 @@ public class EnchantLibraryBlockEntity extends BlockEntity {
             value *= TIER_MULTIPLIER;
         }
         return (int) Math.min(value, Integer.MAX_VALUE / (STORAGE_TOP_BOOKS + 1));
+    }
+
+    /** Library points a given enchantment level is worth (0 for no enchantment). */
+    public static int enchantPoints(int level) {
+        return level <= 0 ? 0 : pointsForLevel(level);
     }
 
     /** Points a stored book adds; books above the library's level cap count as cap-level books. */
@@ -203,10 +209,12 @@ public class EnchantLibraryBlockEntity extends BlockEntity {
     }
 
     /**
-     * Applies the enchantment, at the library's current level, to the given item and charges the
-     * player XP points (free in creative). Upgrading an enchantment only costs the difference.
+     * Applies the enchantment to the given item and charges the player XP points (free in creative)
+     * and the library the points that level is worth. wantedLevel 0 means "the highest the library has";
+     * a higher wanted level than the library has is lowered to what it has. Upgrading an enchantment
+     * already on the item only costs the difference.
      */
-    public Result applyTo(Level level, String id, ItemStack stack, Player player) {
+    public Result applyTo(Level level, String id, ItemStack stack, Player player, int wantedLevel) {
         int pts = pointsOf(id);
         if (pts <= 0) {
             return fail("That enchantment is no longer stored.");
@@ -216,7 +224,8 @@ public class EnchantLibraryBlockEntity extends BlockEntity {
             return fail("Unknown enchantment: " + id);
         }
         Holder<Enchantment> holder = found.get();
-        int lvl = effectiveLevel(holder, pts);
+        int available = effectiveLevel(holder, pts);
+        int lvl = wantedLevel <= 0 ? available : Math.min(wantedLevel, available);
 
         if (!holder.value().canEnchant(stack)) {
             return new Result(false, Component.literal("That can't go on this item: ")
@@ -244,12 +253,22 @@ public class EnchantLibraryBlockEntity extends BlockEntity {
             player.giveExperiencePoints(-cost);
         }
 
+        // the library loses the points of the enchantment that went onto the item
+        int spent = enchantPoints(lvl) - enchantPoints(oldLevel);
+        int remaining = pts - spent;
+        if (remaining <= 0) {
+            points.remove(id);
+        } else {
+            points.put(id, remaining);
+        }
+        setChanged();
+
         ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(current);
         mutable.set(holder, lvl);
         stack.set(DataComponents.ENCHANTMENTS, mutable.toImmutable());
         return new Result(true, Component.literal("Applied ")
                 .append(Enchantment.getFullname(holder, lvl))
-                .append(Component.literal(" (-" + cost + " XP)")));
+                .append(Component.literal(" (-" + cost + " XP, -" + spent + " library points)")));
     }
 
     /** Removes the points for the highest possible book of this enchantment and returns that book. */

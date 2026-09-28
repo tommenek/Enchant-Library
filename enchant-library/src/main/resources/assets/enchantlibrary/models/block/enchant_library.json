@@ -1,8 +1,8 @@
 {
   "parent": "minecraft:block/cube_bottom_top",
   "textures": {
-    "top": "minecraft:block/enchanting_table_top",
-    "bottom": "minecraft:block/obsidian",
-    "side": "minecraft:block/bookshelf"
+    "top": "enchantlibrary:block/enchant_library_top",
+    "bottom": "enchantlibrary:block/enchant_library_bottom",
+    "side": "enchantlibrary:block/enchant_library_side"
   }
 }
