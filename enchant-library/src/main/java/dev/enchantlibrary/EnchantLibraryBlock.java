@@ -3,6 +3,7 @@ package dev.enchantlibrary;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
@@ -19,13 +20,6 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
-/**
- * Controls:
- *  - Right-click with an enchanted book      -> store it in the library
- *  - Right-click with an enchantable item    -> apply the selected enchantment (at the library's level)
- *  - Sneak + right-click with an empty hand  -> cycle the selected enchantment
- *  - Right-click with an empty hand          -> take out a book of the selected enchantment
- */
 public class EnchantLibraryBlock extends Block implements EntityBlock {
 
     public EnchantLibraryBlock(BlockBehaviour.Properties properties) {
@@ -35,6 +29,13 @@ public class EnchantLibraryBlock extends Block implements EntityBlock {
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new EnchantLibraryBlockEntity(pos, state);
+    }
+
+    /** Shows a short message above the hotbar. Only called on the server. */
+    private static void say(Player player, Component message) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            serverPlayer.sendOverlayMessage(message);
+        }
     }
 
     private static boolean isRelevant(ItemStack stack) {
@@ -49,7 +50,6 @@ public class EnchantLibraryBlock extends Block implements EntityBlock {
     protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
                                           Player player, InteractionHand hand, BlockHitResult hit) {
         if (stack.isEmpty() || !isRelevant(stack)) {
-            // let the normal flow continue (empty-hand use, block placing, etc.)
             return InteractionResult.TRY_WITH_EMPTY_HAND;
         }
         if (level.isClientSide()) {
@@ -70,7 +70,7 @@ public class EnchantLibraryBlock extends Block implements EntityBlock {
             result = library.applySelected(level, stack);
         }
 
-        player.displayClientMessage(result.message(), true);
+        say(player, result.message());
         if (result.success()) {
             level.playSound((Player) null, pos, SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
         }
@@ -80,7 +80,6 @@ public class EnchantLibraryBlock extends Block implements EntityBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
-        // only react to a truly empty hand, so placing blocks against the library still works
         if (!player.getMainHandItem().isEmpty()) {
             return InteractionResult.PASS;
         }
@@ -92,18 +91,18 @@ public class EnchantLibraryBlock extends Block implements EntityBlock {
         }
 
         if (player.isShiftKeyDown()) {
-            player.displayClientMessage(library.cycleSelection(level), true);
+            say(player, library.cycleSelection(level));
             return InteractionResult.SUCCESS;
         }
 
         ItemStack book = library.extractSelectedBook(level);
         if (book.isEmpty()) {
-            player.displayClientMessage(Component.literal(
-                    "Nothing to take. Sneak + right-click with an empty hand to select an enchantment."), true);
+            say(player, Component.literal(
+                    "Nothing to take. Sneak + right-click with an empty hand to select an enchantment."));
         } else {
             player.getInventory().placeItemBackInInventory(book);
             level.playSound((Player) null, pos, SoundEvents.BOOK_PAGE_TURN, SoundSource.BLOCKS, 1.0F, 1.0F);
-            player.displayClientMessage(library.describeSelection(level), true);
+            say(player, library.describeSelection(level));
         }
         return InteractionResult.SUCCESS;
     }
