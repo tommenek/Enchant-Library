@@ -2,6 +2,8 @@ package dev.enchantlibrary;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.resources.Identifier;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
@@ -25,7 +27,7 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
     private static final int LIST_Y = 30;
     private static final int LIST_W = 172;
     private static final int ROW_H = 14;
-    private static final int VISIBLE_ROWS = 7;
+    private static final int VISIBLE_ROWS = 6;
     private static final int LIST_H = VISIBLE_ROWS * ROW_H;
 
     private static final int ROW_BG = 0xFF23232B;
@@ -43,11 +45,19 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
 
     // level selector
     private static final int LEVEL_X = 184;
-    private static final int LEVEL_Y = 118;
+    private static final int LEVEL_Y = 106;
     private static final int LEVEL_BTN = 14;
 
     private static final int PANEL_W = 230;
-    private static final int PANEL_H = 232;
+    private static final int PANEL_H = 242;
+
+    /** The vanilla chest texture; the bottom strip of it is the normal player inventory. */
+    private static final Identifier INVENTORY_STRIP =
+            Identifier.withDefaultNamespace("textures/gui/container/generic_54.png");
+    private static final int STRIP_X = (PANEL_W - 176) / 2;
+    private static final int STRIP_Y = 146;
+    private static final int STRIP_V = 126;
+    private static final int STRIP_H = 96;
 
     private int scroll = 0;
     /** 0 means "the highest level the library has". */
@@ -55,18 +65,11 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
     private int hoveredRow = -1;
 
     public EnchantLibraryScreen(EnchantLibraryMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title);
+        super(menu, inventory, title, PANEL_W, PANEL_H);
         this.titleLabelX = 8;
         this.titleLabelY = 8;
-        this.inventoryLabelX = EnchantLibraryMenu.INVENTORY_X;
-        this.inventoryLabelY = EnchantLibraryMenu.INVENTORY_Y - 11;
-    }
-
-    @Override
-    protected void init() {
-        super.init();
-        this.leftPos = (this.width - PANEL_W) / 2;
-        this.topPos = (this.height - PANEL_H) / 2;
+        this.inventoryLabelX = STRIP_X + 8;
+        this.inventoryLabelY = STRIP_Y + 4;
     }
 
     private java.util.List<Payloads.Entry> entries() {
@@ -98,7 +101,9 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
         int left = this.leftPos;
         int top = this.topPos;
 
-        panel(g, left, top, PANEL_W, PANEL_H, PANEL);
+        panel(g, left, top, PANEL_W, STRIP_Y, PANEL);
+        g.blit(RenderPipelines.GUI_TEXTURED, INVENTORY_STRIP, left + STRIP_X, top + STRIP_Y,
+                0.0F, (float) STRIP_V, 176, STRIP_H, 256, 256);
 
         // collection area
         g.fill(left + LIST_X - 1, top + LIST_Y - 1, left + LIST_X + LIST_W + 1, top + LIST_Y + LIST_H + 1, BORDER);
@@ -150,7 +155,7 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
         }
 
         // right column: store and anvil slots
-        panel(g, left + 182, top + 22, 40, 88, PANEL_LIGHT);
+        panel(g, left + 182, top + 22, 40, 78, PANEL_LIGHT);
         slotBox(g, left + EnchantLibraryMenu.STORE_SLOT_X, top + EnchantLibraryMenu.STORE_SLOT_Y);
         slotBox(g, left + EnchantLibraryMenu.TARGET_SLOT_X, top + EnchantLibraryMenu.TARGET_SLOT_Y);
 
@@ -161,16 +166,6 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
         panel(g, lx, ly + LEVEL_BTN + 1, LEVEL_BTN, LEVEL_BTN, PANEL_LIGHT);
         panel(g, lx + 26, ly + LEVEL_BTN + 1, LEVEL_BTN, LEVEL_BTN, PANEL_LIGHT);
 
-        // player inventory slots
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                slotBox(g, left + EnchantLibraryMenu.INVENTORY_X + col * 18,
-                        top + EnchantLibraryMenu.INVENTORY_Y + row * 18);
-            }
-        }
-        for (int col = 0; col < 9; col++) {
-            slotBox(g, left + EnchantLibraryMenu.INVENTORY_X + col * 18, top + EnchantLibraryMenu.HOTBAR_Y);
-        }
     }
 
     @Override
@@ -179,11 +174,11 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
         g.text(this.font, Component.literal(entries().size() + " stored"),
                 LIST_X, LIST_Y - 11, TEXT_DIM, false);
         g.text(this.font, this.playerInventoryTitle,
-                this.inventoryLabelX, this.inventoryLabelY, TEXT_DIM, false);
+                this.inventoryLabelX, this.inventoryLabelY, 0xFF404040, false);
 
         // column labels
         g.text(this.font, Component.literal("Books"), 186, 24, TEXT_DIM, false);
-        g.text(this.font, Component.literal("Item"), 186, 74, TEXT_DIM, false);
+        g.text(this.font, Component.literal("Item"), 186, 64, TEXT_DIM, false);
 
         // level selector text
         String levelText = chosenLevel <= 0 ? "Lv: max" : "Lv: " + chosenLevel;

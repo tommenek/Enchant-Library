@@ -34,10 +34,11 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
     public static final int STORE_SLOT_X = 191;
     public static final int STORE_SLOT_Y = 36;
     public static final int TARGET_SLOT_X = 191;
-    public static final int TARGET_SLOT_Y = 86;
-    public static final int INVENTORY_X = 34;
-    public static final int INVENTORY_Y = 150;
-    public static final int HOTBAR_Y = 208;
+    public static final int TARGET_SLOT_Y = 76;
+    /** Lines up with the vanilla inventory strip the screen draws. */
+    public static final int INVENTORY_X = 35;
+    public static final int INVENTORY_Y = 160;
+    public static final int HOTBAR_Y = 218;
 
     private static final int STORE_SLOT = 0;
     private static final int TARGET_SLOT = 1;
@@ -74,9 +75,6 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
             addSlot(new Slot(playerInventory, col, INVENTORY_X + col * 18, HOTBAR_Y));
         }
 
-        if (library != null && playerInventory.player instanceof ServerPlayer serverPlayer) {
-            syncTo(serverPlayer);
-        }
     }
 
     // ---------- slots ----------
@@ -127,8 +125,11 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
 
     // ---------- server side ----------
 
-    /** Builds the collection snapshot and sends it to the player. */
-    private void syncTo(ServerPlayer player) {
+    /**
+     * Builds the collection snapshot and sends it to the player. Must not be called from the
+     * constructor: the client has no screen yet at that point and would drop the packet.
+     */
+    public void syncToClient(ServerPlayer player) {
         List<Payloads.Entry> entries = new ArrayList<>();
         for (Map.Entry<String, Integer> stored : library.entries()) {
             Optional<Holder<Enchantment>> found = EnchantLibraryBlockEntity.lookup(level, stored.getKey());
@@ -181,7 +182,7 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
                 container.setChanged();
             }
         }
-        syncTo(player);
+        syncToClient(player);
         broadcastChanges();
     }
 
@@ -208,7 +209,7 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
         if (changed && player instanceof ServerPlayer serverPlayer) {
             player.level().playSound(null, library.getBlockPos(), SoundEvents.BOOK_PUT,
                     SoundSource.BLOCKS, 1.0F, 1.0F);
-            syncTo(serverPlayer);
+            syncToClient(serverPlayer);
         }
     }
 

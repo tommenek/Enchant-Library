@@ -2,6 +2,7 @@ package dev.enchantlibrary;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
@@ -45,6 +46,11 @@ public class EnchantLibraryBlock extends Block implements EntityBlock {
             player.openMenu(new SimpleMenuProvider(
                     (containerId, inventory, ignored) -> new EnchantLibraryMenu(containerId, inventory, library, level),
                     this.getName()));
+            // send the collection now that the client has actually opened the screen
+            if (player instanceof ServerPlayer serverPlayer
+                    && serverPlayer.containerMenu instanceof EnchantLibraryMenu menu) {
+                menu.syncToClient(serverPlayer);
+            }
         }
         return InteractionResult.SUCCESS;
     }
