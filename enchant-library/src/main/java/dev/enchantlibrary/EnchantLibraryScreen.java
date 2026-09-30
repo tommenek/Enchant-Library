@@ -123,7 +123,7 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
                     hovering ? ROW_HOVER : (i % 2 == 0 ? ROW_BG : ROW_BG_ALT));
 
             Payloads.Entry entry = entries.get(index);
-            g.drawString(this.font, entry.name(), rowX + 4, rowY + 3, TEXT, false);
+            g.text(this.font, entry.name(), rowX + 4, rowY + 3, TEXT, false);
 
             // progress toward the next level, on the right of the row
             int barW = 44;
@@ -175,27 +175,27 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
 
     @Override
     protected void extractLabels(GuiGraphicsExtractor g, int mouseX, int mouseY) {
-        g.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, TEXT_GOLD, false);
-        g.drawString(this.font, Component.literal(entries().size() + " stored"),
+        g.text(this.font, this.title, this.titleLabelX, this.titleLabelY, TEXT_GOLD, false);
+        g.text(this.font, Component.literal(entries().size() + " stored"),
                 LIST_X, LIST_Y - 11, TEXT_DIM, false);
-        g.drawString(this.font, this.playerInventoryTitle,
+        g.text(this.font, this.playerInventoryTitle,
                 this.inventoryLabelX, this.inventoryLabelY, TEXT_DIM, false);
 
         // column labels
-        g.drawString(this.font, Component.literal("Books"), 186, 24, TEXT_DIM, false);
-        g.drawString(this.font, Component.literal("Item"), 186, 74, TEXT_DIM, false);
+        g.text(this.font, Component.literal("Books"), 186, 24, TEXT_DIM, false);
+        g.text(this.font, Component.literal("Item"), 186, 74, TEXT_DIM, false);
 
         // level selector text
         String levelText = chosenLevel <= 0 ? "Lv: max" : "Lv: " + chosenLevel;
-        g.drawString(this.font, Component.literal(levelText), LEVEL_X + 4, LEVEL_Y + 3, TEXT, false);
-        g.drawString(this.font, Component.literal("-"), LEVEL_X + 5, LEVEL_Y + LEVEL_BTN + 5, TEXT, false);
-        g.drawString(this.font, Component.literal("+"), LEVEL_X + 30, LEVEL_Y + LEVEL_BTN + 5, TEXT, false);
+        g.text(this.font, Component.literal(levelText), LEVEL_X + 4, LEVEL_Y + 3, TEXT, false);
+        g.text(this.font, Component.literal("-"), LEVEL_X + 5, LEVEL_Y + LEVEL_BTN + 5, TEXT, false);
+        g.text(this.font, Component.literal("+"), LEVEL_X + 30, LEVEL_Y + LEVEL_BTN + 5, TEXT, false);
 
         // detail strip for the hovered row, instead of a tooltip
         int detailY = LIST_Y + LIST_H + 4;
         if (hoveredRow >= 0 && hoveredRow < entries().size()) {
             Payloads.Entry entry = entries().get(hoveredRow);
-            g.drawString(this.font, Component.literal(
+            g.text(this.font, Component.literal(
                             entry.name() + "  -  level " + entry.level() + " of max " + entry.cap()
                                     + " (vanilla " + entry.vanillaMax() + ")"),
                     LIST_X, detailY, TEXT, false);
@@ -215,13 +215,13 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
                 second = entry.points() + " pts stored";
                 colour = TEXT_DIM;
             }
-            g.drawString(this.font, Component.literal(second), LIST_X, detailY + 10, colour, false);
-            g.drawString(this.font, Component.literal("Left-click apply  |  Right-click take book"),
+            g.text(this.font, Component.literal(second), LIST_X, detailY + 10, colour, false);
+            g.text(this.font, Component.literal("Left-click apply  |  Right-click take book"),
                     LIST_X, detailY + 20, TEXT_DIM, false);
         } else {
-            g.drawString(this.font, Component.literal("Hover an enchantment for details."),
+            g.text(this.font, Component.literal("Hover an enchantment for details."),
                     LIST_X, detailY, TEXT_DIM, false);
-            g.drawString(this.font, Component.literal("Books -> store slot, item -> anvil slot."),
+            g.text(this.font, Component.literal("Books -> store slot, item -> anvil slot."),
                     LIST_X, detailY + 10, TEXT_DIM, false);
         }
     }
