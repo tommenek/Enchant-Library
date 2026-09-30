@@ -14,11 +14,23 @@ Bookshelf / Enchanting Table / Bookshelf
 Obsidian x3
 
 ## Use
-Right-click the block to open the library screen.
-- Click with an enchanted book on the list (or shift-click a book in your inventory): store it
-- Put an item in the middle bottom slot, pick the level with the experience-bottle button
-  (left-click +1, right-click -1, shift-click = highest available), then left-click an enchantment
-- Right-click or shift-click an enchantment: take out a book of that enchantment
+Right-click the block to open the library screen - a custom drawn interface, not a reskinned chest.
+
+**Left: your collection.** A scrolling list (mouse wheel) of every stored enchantment, each
+showing its name, current level, and a progress bar toward the next level. Hovering a row
+shows its details underneath: level of max (and the vanilla max), points stored, and what
+applying the chosen level would cost.
+- Left-click a row: apply that enchantment to the item in the anvil slot
+- Right-click a row: take out a book of that enchantment
+
+**Right: the two slots.**
+- Books slot (top): drop enchanted books here to add them; shift-clicking books in your
+  inventory sends them here too
+- Item slot (bottom): the item to enchant
+- Below them, the `- Lv: max +` control picks which level to apply (max = the highest the
+  library has)
+
+Status messages appear in chat, so they stay readable while the screen is open.
 
 ## Balance
 - Tiers: a level-L book is worth 3^(L-1) points, so 3 books of one level make the next level
