@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/cube_bottom_top",
-  "textures": {
-    "top": "enchantlibrary:block/enchant_library_top",
-    "bottom": "enchantlibrary:block/enchant_library_bottom",
-    "side": "enchantlibrary:block/enchant_library_side"
-  }
-}
