@@ -31,14 +31,14 @@ import net.minecraft.world.level.Level;
  */
 public class EnchantLibraryMenu extends AbstractContainerMenu {
 
-    public static final int STORE_SLOT_X = 191;
-    public static final int STORE_SLOT_Y = 36;
-    public static final int TARGET_SLOT_X = 191;
-    public static final int TARGET_SLOT_Y = 76;
-    /** Lines up with the vanilla inventory strip the screen draws. */
-    public static final int INVENTORY_X = 35;
-    public static final int INVENTORY_Y = 160;
-    public static final int HOTBAR_Y = 218;
+    public static final int STORE_SLOT_X = 200;
+    public static final int STORE_SLOT_Y = 33;
+    public static final int TARGET_SLOT_X = 200;
+    public static final int TARGET_SLOT_Y = 64;
+    /** Centred in the 240 wide panel the screen draws. */
+    public static final int INVENTORY_X = 40;
+    public static final int INVENTORY_Y = 157;
+    public static final int HOTBAR_Y = 215;
 
     private static final int STORE_SLOT = 0;
     private static final int TARGET_SLOT = 1;
