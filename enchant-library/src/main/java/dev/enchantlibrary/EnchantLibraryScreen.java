@@ -169,6 +169,15 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
     }
 
     @Override
+    /** Draws text at 3/4 size, for the info strip which would otherwise overflow the box. */
+    private void smallText(GuiGraphicsExtractor g, Component text, int x, int y, int colour) {
+        float scale = 0.75F;
+        g.pose().pushMatrix();
+        g.pose().scale(scale, scale);
+        g.text(this.font, text, Math.round(x / scale), Math.round(y / scale), colour, false);
+        g.pose().popMatrix();
+    }
+
     protected void extractLabels(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         g.text(this.font, this.title, this.titleLabelX, this.titleLabelY, TEXT_GOLD, false);
         g.text(this.font, Component.literal(entries().size() + " stored"),
@@ -190,10 +199,10 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
         int detailY = LIST_Y + LIST_H + 4;
         if (hoveredRow >= 0 && hoveredRow < entries().size()) {
             Payloads.Entry entry = entries().get(hoveredRow);
-            g.text(this.font, Component.literal(
+            smallText(g, Component.literal(
                             entry.name() + "  -  level " + entry.level() + " of max " + entry.cap()
                                     + " (vanilla " + entry.vanillaMax() + ")"),
-                    LIST_X, detailY, TEXT, false);
+                    LIST_X, detailY, TEXT);
 
             String second;
             int colour;
@@ -210,14 +219,14 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
                 second = entry.points() + " pts stored";
                 colour = TEXT_DIM;
             }
-            g.text(this.font, Component.literal(second), LIST_X, detailY + 10, colour, false);
-            g.text(this.font, Component.literal("Left-click apply  |  Right-click take book"),
-                    LIST_X, detailY + 20, TEXT_DIM, false);
+            smallText(g, Component.literal(second), LIST_X, detailY + 9, colour);
+            smallText(g, Component.literal("Left-click apply  |  Right-click take book at this level"),
+                    LIST_X, detailY + 18, TEXT_DIM);
         } else {
-            g.text(this.font, Component.literal("Hover an enchantment for details."),
-                    LIST_X, detailY, TEXT_DIM, false);
-            g.text(this.font, Component.literal("Books -> store slot, item -> anvil slot."),
-                    LIST_X, detailY + 10, TEXT_DIM, false);
+            smallText(g, Component.literal("Hover an enchantment for details."),
+                    LIST_X, detailY, TEXT_DIM);
+            smallText(g, Component.literal("Books -> store slot, item -> anvil slot."),
+                    LIST_X, detailY + 9, TEXT_DIM);
         }
     }
 

@@ -273,13 +273,22 @@ public class EnchantLibraryBlockEntity extends BlockEntity {
 
     /** Removes the points for the highest possible book of this enchantment and returns that book. */
     public ItemStack extractBook(Level level, String id) {
+        return extractBook(level, id, 0);
+    }
+
+    /**
+     * Takes a book out at {@code wantedLevel} (0 = the highest the library has). Asking for more
+     * than the library holds gives the highest it can. The points for that level are spent.
+     */
+    public ItemStack extractBook(Level level, String id, int wantedLevel) {
         Optional<Holder<Enchantment>> found = lookup(level, id);
         if (found.isEmpty()) {
             return ItemStack.EMPTY;
         }
         Holder<Enchantment> holder = found.get();
         int pts = pointsOf(id);
-        int lvl = effectiveLevel(holder, pts);
+        int available = effectiveLevel(holder, pts);
+        int lvl = wantedLevel <= 0 ? available : Math.min(wantedLevel, available);
         if (lvl <= 0) {
             return ItemStack.EMPTY;
         }

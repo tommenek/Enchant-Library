@@ -160,7 +160,7 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
             return;
         }
         if (action.action() == Payloads.LibraryAction.EXTRACT) {
-            ItemStack book = library.extractBook(level, action.id());
+            ItemStack book = library.extractBook(level, action.id(), action.level());
             if (!book.isEmpty()) {
                 player.getInventory().placeItemBackInInventory(book);
                 player.level().playSound(null, library.getBlockPos(), SoundEvents.BOOK_PAGE_TURN,
