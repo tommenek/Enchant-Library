@@ -20,8 +20,8 @@ public class EnchantLibraryMod implements ModInitializer {
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS)
                 .register(output -> output.accept(ModRegistry.ENCHANT_LIBRARY_ITEM));
 
-        PayloadTypeRegistry.playS2C().register(Payloads.LibraryData.TYPE, Payloads.LibraryData.CODEC);
-        PayloadTypeRegistry.playC2S().register(Payloads.LibraryAction.TYPE, Payloads.LibraryAction.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(Payloads.LibraryData.TYPE, Payloads.LibraryData.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(Payloads.LibraryAction.TYPE, Payloads.LibraryAction.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(Payloads.LibraryAction.TYPE, (payload, context) -> {
             context.server().execute(() -> {

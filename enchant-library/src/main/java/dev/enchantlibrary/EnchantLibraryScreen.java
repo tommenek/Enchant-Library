@@ -1,6 +1,7 @@
 package dev.enchantlibrary;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
@@ -45,6 +46,9 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
     private static final int LEVEL_Y = 118;
     private static final int LEVEL_BTN = 14;
 
+    private static final int PANEL_W = 230;
+    private static final int PANEL_H = 232;
+
     private int scroll = 0;
     /** 0 means "the highest level the library has". */
     private int chosenLevel = 0;
@@ -52,12 +56,17 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
 
     public EnchantLibraryScreen(EnchantLibraryMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
-        this.imageWidth = 230;
-        this.imageHeight = 232;
         this.titleLabelX = 8;
         this.titleLabelY = 8;
         this.inventoryLabelX = EnchantLibraryMenu.INVENTORY_X;
         this.inventoryLabelY = EnchantLibraryMenu.INVENTORY_Y - 11;
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        this.leftPos = (this.width - PANEL_W) / 2;
+        this.topPos = (this.height - PANEL_H) / 2;
     }
 
     private java.util.List<Payloads.Entry> entries() {
@@ -70,7 +79,7 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
 
     // ---------- drawing ----------
 
-    private static void panel(GuiGraphics g, int x, int y, int w, int h, int fill) {
+    private static void panel(GuiGraphicsExtractor g, int x, int y, int w, int h, int fill) {
         g.fill(x, y, x + w, y + h, fill);
         g.fill(x, y, x + w, y + 1, EDGE_HI);
         g.fill(x, y, x + 1, y + h, EDGE_HI);
@@ -78,17 +87,18 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
         g.fill(x + w - 1, y, x + w, y + h, BORDER);
     }
 
-    private static void slotBox(GuiGraphics g, int x, int y) {
+    private static void slotBox(GuiGraphicsExtractor g, int x, int y) {
         g.fill(x - 1, y - 1, x + 17, y + 17, SLOT_EDGE);
         g.fill(x, y, x + 16, y + 16, SLOT_BG);
     }
 
     @Override
-    protected void renderBg(GuiGraphics g, float partialTick, int mouseX, int mouseY) {
+    public void extractBackground(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        scroll = Math.min(scroll, maxScroll());
         int left = this.leftPos;
         int top = this.topPos;
 
-        panel(g, left, top, this.imageWidth, this.imageHeight, PANEL);
+        panel(g, left, top, PANEL_W, PANEL_H, PANEL);
 
         // collection area
         g.fill(left + LIST_X - 1, top + LIST_Y - 1, left + LIST_X + LIST_W + 1, top + LIST_Y + LIST_H + 1, BORDER);
@@ -164,7 +174,7 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
     }
 
     @Override
-    protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
+    protected void extractLabels(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         g.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, TEXT_GOLD, false);
         g.drawString(this.font, Component.literal(entries().size() + " stored"),
                 LIST_X, LIST_Y - 11, TEXT_DIM, false);
@@ -219,7 +229,10 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
     // ---------- input ----------
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         int left = this.leftPos;
         int top = this.topPos;
 
@@ -251,10 +264,9 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
             }
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
-    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (maxScroll() > 0) {
             scroll = Math.max(0, Math.min(maxScroll(), scroll - (int) Math.signum(scrollY)));
@@ -263,10 +275,4 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
-    @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        super.render(g, mouseX, mouseY, partialTick);
-        this.renderTooltip(g, mouseX, mouseY);
-        scroll = Math.min(scroll, maxScroll());
-    }
 }
