@@ -4,8 +4,9 @@
   "key": {
     "O": "minecraft:obsidian",
     "B": "minecraft:bookshelf",
-    "E": "minecraft:enchanting_table"
+    "E": "minecraft:enchanting_table",
+    "R": "minecraft:respawn_anchor"
   },
-  "pattern": ["OBO", "BEB", "OOO"],
+  "pattern": ["ORO", "BEB", "OOO"],
   "result": { "id": "enchantlibrary:enchant_library" }
 }
