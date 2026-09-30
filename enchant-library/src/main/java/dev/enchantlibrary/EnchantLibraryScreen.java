@@ -168,7 +168,6 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
 
     }
 
-    @Override
     /** Draws text at 3/4 size, for the info strip which would otherwise overflow the box. */
     private void smallText(GuiGraphicsExtractor g, Component text, int x, int y, int colour) {
         float scale = 0.75F;
@@ -178,6 +177,7 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
         g.pose().popMatrix();
     }
 
+    @Override
     protected void extractLabels(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         g.text(this.font, this.title, this.titleLabelX, this.titleLabelY, TEXT_GOLD, false);
         g.text(this.font, Component.literal(entries().size() + " stored"),
