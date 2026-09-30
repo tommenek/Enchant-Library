@@ -5,18 +5,52 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: enchant-library
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 25
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: 9.5.1
-      - run: gradle build
-        working-directory: enchant-library
-      - uses: actions/upload-artifact@v4
+      - name: Build
+        run: |
+          set -o pipefail
+          gradle build --stacktrace 2>&1 | tee build.log
+      - name: Report errors
+        if: failure()
+        run: |
+          # GitHub shows few annotations per step, so pack many lines into each (%0A is a newline)
+          join() { awk '{gsub(/%/,"%25"); printf "%s%%0A", $0}'; }
+          grep -E "error:" -A 4 build.log > errors.txt || grep -E "What went wrong" -A 15 build.log > errors.txt || true
+          split -l 40 errors.txt chunk_
+          for f in chunk_*; do
+            echo "::error::$(join < "$f")"
+          done
+      - name: Dump API
+        # debugging aid: list classes matching .github/api-grep.txt and javap those in .github/api-classes.txt
+        if: always() && (hashFiles('.github/api-classes.txt') != '' || hashFiles('.github/api-grep.txt') != '')
+        working-directory: .
+        run: |
+          join() { awk '{gsub(/%/,"%25"); printf "%s%%0A", $0}'; }
+          mc=$(find ~/.gradle/caches/fabric-loom -name 'minecraft-merged.jar' | head -1)
+          fabric=$(find ~/.gradle/caches -name 'fabric-*.jar' -not -name '*sources*' | paste -sd ':')
+          cp="$mc:$fabric"
+          if [ -f .github/api-grep.txt ]; then
+            for jar in $mc $(echo "$fabric" | tr ':' ' '); do unzip -Z1 "$jar" 2>/dev/null; done | grep '\.class$' | grep -v '\$' | sort -u > classes.txt
+            while read -r pat; do
+              echo "::warning::grep $pat%0A$(grep -iE "$pat" classes.txt | head -40 | join)"
+            done < .github/api-grep.txt
+          fi
+          # each line: <class> [optional regex to keep only matching members]
+          while read -r c filter; do
+            echo "::warning::$(javap -cp "$cp" "$c" 2>&1 | grep -v 'lambda\$' | grep -E "${filter:-.}" | head -150 | join)"
+          done < <(cat .github/api-classes.txt 2>/dev/null)
+      - uses: actions/upload-artifact@v5
         with:
           name: enchant-library-jar
           path: enchant-library/build/libs/*.jar
