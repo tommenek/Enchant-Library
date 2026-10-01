@@ -162,7 +162,7 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
         if (action.action() == Payloads.LibraryAction.EXTRACT) {
             ItemStack book = library.extractBook(level, action.id(), action.level());
             if (!book.isEmpty()) {
-                player.getInventory().placeItemBackInInventory(book);
+                giveOrDrop(player, book);
                 player.level().playSound(null, library.getBlockPos(), SoundEvents.BOOK_PAGE_TURN,
                         SoundSource.BLOCKS, 1.0F, 1.0F);
             }
@@ -259,6 +259,13 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
         broadcastChanges();
     }
 
+    /** Puts a stack in the player's inventory, dropping what does not fit (same on every 26.x version). */
+    private static void giveOrDrop(Player player, ItemStack stack) {
+        if (!player.getInventory().add(stack) && !stack.isEmpty()) {
+            player.drop(stack, false);
+        }
+    }
+
     // ---------- lifecycle ----------
 
     @Override
@@ -277,7 +284,7 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
             ItemStack stack = container.getItem(slotId);
             if (!stack.isEmpty()) {
                 container.setItem(slotId, ItemStack.EMPTY);
-                player.getInventory().placeItemBackInInventory(stack);
+                giveOrDrop(player, stack);
             }
         }
         super.removed(player);
