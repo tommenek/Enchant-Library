@@ -313,7 +313,8 @@ public class EnchantLibraryScreen extends AbstractContainerScreen<EnchantLibrary
             int row = (int) ((mouseY - (top + LIST_Y)) / ROW_H) + scroll;
             if (row >= 0 && row < entries().size()) {
                 Payloads.Entry entry = entries().get(row);
-                int action = button == 1 ? Payloads.LibraryAction.EXTRACT : Payloads.LibraryAction.APPLY;
+                boolean take = (button == 1) != VersionCompat.SWAP_MOUSE_BUTTONS;
+                int action = take ? Payloads.LibraryAction.EXTRACT : Payloads.LibraryAction.APPLY;
                 net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
                         new Payloads.LibraryAction(entry.id(), action, chosenLevel));
                 return true;
