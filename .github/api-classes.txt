@@ -1,3 +1,0 @@
-net.minecraft.client.input.MouseButtonEvent
-net.minecraft.client.input.MouseButtonInfo
-net.minecraft.client.gui.screens.inventory.AbstractContainerScreen mouse|Mouse
