@@ -1,4 +1,4 @@
-# Enchant Library (Fabric, Minecraft 26.2)
+# Enchant Library (Fabric, Minecraft 26.1 / 26.2 / 26.3)
 
 Java 25, Fabric Loader 0.19.3+, Fabric API for 26.2.
 
@@ -7,6 +7,8 @@ Easiest: generate a template at https://fabricmc.net/develop/template (Minecraft
 to get the Gradle wrapper, then copy in `src/`, `build.gradle`, `gradle.properties`, `settings.gradle`.
 Or with Gradle 9.5.1 installed: `gradle wrapper --gradle-version 9.5.1` then `./gradlew build`.
 The jar lands in `build/libs/`.
+Pick the Minecraft version with `-Pmc=26.1`, `-Pmc=26.2` (default) or `-Pmc=26.3`; versions live in `versions/`.
+GitHub Actions builds all three; each run has one jar artifact per version.
 
 ## Craft
 Obsidian / Bookshelf / Obsidian
@@ -27,7 +29,7 @@ applying the chosen level would cost.
 - Books slot (top): drop enchanted books here to add them; shift-clicking books in your
   inventory sends them here too
 - Item slot (bottom): the item to enchant
-- Below them, the `- Lv: max +` control picks which level to apply (max = the highest the
+- Under the item slot, the `- max +` control picks which level to apply (max = the highest the
   library has)
 
 Status messages appear in chat, so they stay readable while the screen is open.
