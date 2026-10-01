@@ -262,7 +262,8 @@ public class EnchantLibraryMenu extends AbstractContainerMenu {
     /** Puts a stack in the player's inventory, dropping what does not fit (same on every 26.x version). */
     private static void giveOrDrop(Player player, ItemStack stack) {
         if (!player.getInventory().add(stack) && !stack.isEmpty()) {
-            player.drop(stack, false);
+            player.level().addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(
+                    player.level(), player.getX(), player.getY(), player.getZ(), stack));
         }
     }
 
