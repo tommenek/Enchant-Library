@@ -5,6 +5,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mc: ['26.1', '26.2', '26.3']
     defaults:
       run:
         working-directory: enchant-library
@@ -20,7 +24,7 @@ jobs:
       - name: Build
         run: |
           set -o pipefail
-          gradle build --stacktrace 2>&1 | tee build.log
+          gradle build --stacktrace -Pmc=${{ matrix.mc }} 2>&1 | tee build.log
       - name: Report errors
         if: failure()
         run: |
@@ -29,7 +33,7 @@ jobs:
           grep -E "error:" -A 4 build.log > errors.txt || grep -E "What went wrong" -A 15 build.log > errors.txt || true
           split -l 40 errors.txt chunk_
           for f in chunk_*; do
-            echo "::error::$(join < "$f")"
+            echo "::error title=${{ matrix.mc }}::$(join < "$f")"
           done
       - name: Dump API
         # debugging aid: list classes matching .github/api-grep.txt and javap those in .github/api-classes.txt
@@ -52,5 +56,7 @@ jobs:
           done < <(cat .github/api-classes.txt 2>/dev/null)
       - uses: actions/upload-artifact@v5
         with:
-          name: enchant-library-jar
-          path: enchant-library/build/libs/*.jar
+          name: enchant-library-${{ matrix.mc }}
+          path: |
+            enchant-library/build/libs/*.jar
+            !enchant-library/build/libs/*-sources.jar

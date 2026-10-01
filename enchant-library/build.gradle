@@ -3,7 +3,12 @@ plugins {
     id 'maven-publish'
 }
 
-version = project.mod_version
+// versions/<mc>.properties holds minecraft_version, fabric_api_version and minecraft_dependency
+def mcProps = new Properties()
+file("versions/${project.mc}.properties").withInputStream { mcProps.load(it) }
+mcProps.each { k, v -> ext.set(k, v) }
+
+version = "${project.mod_version}+${project.mc}"
 group = project.maven_group
 
 base {
@@ -22,9 +27,18 @@ dependencies {
 
 processResources {
     inputs.property "version", project.version
+    inputs.property "minecraft_dependency", project.minecraft_dependency
     filesMatching("fabric.mod.json") {
-        expand "version": inputs.properties.version
+        expand "version": inputs.properties.version, "minecraft_dependency": inputs.properties.minecraft_dependency
     }
+}
+
+// src/mc<mc>/java holds per-version replacements: a file there replaces the one with the same path in src/main/java
+def overlay = file("src/mc${project.mc}/java")
+if (overlay.exists()) {
+    def replaced = fileTree(overlay).collect { overlay.toPath().relativize(it.toPath()).toString().replace("\\", "/") } as Set
+    sourceSets.main.java.srcDir overlay
+    sourceSets.main.java.exclude { el -> !el.file.path.startsWith(overlay.path) && replaced.contains(el.relativePath.pathString) }
 }
 
 tasks.withType(JavaCompile).configureEach {
